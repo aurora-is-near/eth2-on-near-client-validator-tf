@@ -1,0 +1,30 @@
+- name: Setup User
+  hosts: digitalocean
+  become: true
+  remote_user: root
+  ignore_unreachable: true
+  vars:
+    new_user: "{{ lookup('env', 'DO_USER', default='ubuntu') }}"
+    ssh_public_key: "{{ lookup('env', 'DO_PUBLIC_KEY') }}"
+  tasks:
+    - name: Create a new non-root user
+      user:
+        name: "{{ new_user }}"
+        shell: /bin/bash
+        create_home: yes
+        groups: sudo
+        append: yes
+
+    - name: Set up authorized keys for the new user
+      authorized_key:
+        user: "{{ new_user }}"
+        state: present
+        key: "{{ ssh_public_key }}"
+
+    - name: Ensure passwordless sudo for the new user
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: "^%sudo"
+        line: "%sudo ALL=(ALL) NOPASSWD: ALL"
+        validate: "visudo -cf %s"

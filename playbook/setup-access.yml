@@ -1,0 +1,34 @@
+- name: Setup Access
+  hosts: digitalocean
+  become: true
+  tasks:
+    - name: Enforce password policy
+      pamd:
+        name: common-password
+        type: password
+        control: requisite
+        module_path: pam_pwquality.so
+        module_arguments: "retry=3 minlen=12"
+
+    - name: Harden SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "^PermitRootLogin", line: "PermitRootLogin no" }
+        - {
+            regexp: "^PasswordAuthentication",
+            line: "PasswordAuthentication no",
+          }
+        - { regexp: "^UsePAM", line: "UsePAM yes" }
+        - { regexp: "^Protocol", line: "Protocol 2" }
+        - { regexp: "^LoginGraceTime", line: "LoginGraceTime 60" }
+        - { regexp: "^MaxAuthTries", line: "MaxAuthTries 3" }
+      notify: restart ssh
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted

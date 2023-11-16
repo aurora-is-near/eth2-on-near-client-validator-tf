@@ -1,0 +1,51 @@
+- name: Build
+  hosts: digitalocean
+  become: true
+  vars:
+    user: "{{ lookup('env', 'DO_USER', default='ubuntu') }}"
+    src_path: "{{ lookup('env', 'NODE_SRC_PATH') }}"
+  tasks:
+    - name: Update all packages to their latest version
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install make, rsync, docker.io
+      apt:
+        name:
+          - make
+          - rsync
+          - docker.io
+        state: latest
+        update-cache: yes
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ user }}"
+        group: docker
+
+    - name: Check if reboot required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Diplay reboot
+      debug:
+        msg: "{{reboot_required_file.stat.exists}}"
+
+    - name: Reboot if required
+      reboot:
+      when: reboot_required_file.stat.exists == true
+
+    - name: Synchronize source
+      synchronize:
+        src: "{{ src_path }}"
+        dest: /home/{{ user }}/
+        recursive: yes
+        rsync_opts:
+          - "--exclude=.git" # Optional: Exclude files/directories
+
+    - name: Build Docker image
+      command: make build-docker-image
+      args:
+        chdir: "/home/{{ user }}/eth2-on-near-client-validator/"

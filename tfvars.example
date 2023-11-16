@@ -1,0 +1,6 @@
+do_token          = ""
+do_ssh_key_path   = ""
+do_droplet_image  = ""
+do_droplet_region = ""
+do_droplet_size   = ""
+do_droplet_count  = ""

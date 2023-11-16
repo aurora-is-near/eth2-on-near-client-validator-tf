@@ -1,0 +1,10 @@
+- name: Stop
+  hosts: digitalocean
+  become: true
+  vars:
+    user: "{{ lookup('env', 'DO_USER', default='ubuntu') }}"
+  tasks:
+    - name: Stop Docker Container
+      command: make stop-and-remove
+      args:
+        chdir: "/home/{{ user }}/eth2-on-near-client-validator/"

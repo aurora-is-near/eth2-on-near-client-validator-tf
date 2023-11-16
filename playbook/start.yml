@@ -1,0 +1,10 @@
+- name: Start
+  hosts: digitalocean
+  become: true
+  vars:
+    user: "{{ lookup('env', 'DO_USER', default='ubuntu') }}"
+  tasks:
+    - name: Start Docker Container
+      command: make run-goerli
+      args:
+        chdir: "/home/{{ user }}/eth2-on-near-client-validator/"
